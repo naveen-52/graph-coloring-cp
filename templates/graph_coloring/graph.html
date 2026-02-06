@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+
+{% block title %}Graph Visualization - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Graph Coloring</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Visualization</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Graph Visualization</h1>
+    <p class="page-subtitle">Your graph has been generated. Choose an action below.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Graph Structure</h3>
+    </div>
+
+    <div class="graph-container">
+        <img src="data:image/png;base64,{{ graph_url }}" alt="Graph Visualization" class="graph-image">
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">What would you like to do?</h3>
+
+    <div class="action-buttons">
+        <form action="/graph-coloring/chromatic" method="POST" style="display: inline;">
+            <input type="hidden" name="num_vertices" value="{{ num_vertices }}">
+            {% for i in range(num_vertices) %}
+                {% for j in range(num_vertices) %}
+                    <input type="hidden" name="cell_{{ i }}_{{ j }}" value="{{ matrix[i][j] }}">
+                {% endfor %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-paint-brush"></i>
+                Find Chromatic Number
+            </button>
+        </form>
+
+        <a href="/graph-coloring" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Start Over
+        </a>
+    </div>
+</div>
+{% endblock %}

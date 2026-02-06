@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}Manual Coloring Results - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Graph Coloring</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Manual Results</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Manual Coloring Results</h1>
+    <p class="page-subtitle">All valid colorings with your specified number of colors.</p>
+</div>
+
+<div class="card">
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>Successfully generated {{ graphs|length }} valid color combinations!</span>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Generated Colorings</h3>
+
+    <div class="graph-grid">
+        {% for graph_url in graphs[:12] %}
+        <div class="graph-item">
+            <img src="data:image/png;base64,{{ graph_url }}" alt="Manual Coloring {{ loop.index }}">
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if graphs|length > 12 %}
+    <p class="card-description" style="margin-top: 20px;">
+        <i class="fas fa-info-circle"></i> Showing first 12 of {{ graphs|length }} total combinations.
+    </p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="action-buttons">
+        <a href="/graph-coloring" class="btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Try Another Graph
+        </a>
+        <a href="/" class="btn btn-secondary">
+            <i class="fas fa-home"></i>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block title %}Enter Adjacency Matrix - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Graph Coloring</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Adjacency Matrix</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Enter Adjacency Matrix</h1>
+    <p class="page-subtitle">Define the connections between vertices (1 = connected, 0 = not connected).</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{{ num_vertices }} × {{ num_vertices }} Matrix</h3>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <span>Enter 1 if vertices are connected, 0 otherwise. The matrix should be symmetric.</span>
+    </div>
+
+    <form action="/graph-coloring/visualize" method="POST">
+        <input type="hidden" name="num_vertices" value="{{ num_vertices }}">
+
+        <div class="matrix-container">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for j in range(num_vertices) %}
+                        <th style="text-align: center; padding: 8px;">{{ chr(65 + j) }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(num_vertices) %}
+                    <tr>
+                        <th style="padding: 8px;">{{ chr(65 + i) }}</th>
+                        {% for j in range(num_vertices) %}
+                        <td>
+                            <input type="number" name="cell_{{ i }}_{{ j }}" class="matrix-input"
+                                   min="0" max="1" value="0" required>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-eye"></i>
+                Visualize Graph
+            </button>
+            <a href="/graph-coloring" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

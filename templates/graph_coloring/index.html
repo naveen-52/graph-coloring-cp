@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block title %}Graph Coloring - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Graph Coloring</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Graph Coloring Algorithm</h1>
+    <p class="page-subtitle">Visualize graph coloring using the Welsh-Powell algorithm to find the chromatic number.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Configure Your Graph</h3>
+        <div class="card-icon">
+            <i class="fas fa-palette"></i>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <span>Enter the number of vertices in your graph to begin creating the adjacency matrix.</span>
+    </div>
+
+    <form action="/graph-coloring/matrix" method="POST">
+        <div class="form-group">
+            <label class="form-label" for="num_vertices">Number of Vertices</label>
+            <input type="number" id="num_vertices" name="num_vertices" class="form-input"
+                   min="2" max="10" required placeholder="Enter a number between 2 and 10">
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-arrow-right"></i>
+                Create Matrix
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h3 class="card-title">How It Works</h3>
+    <div class="card-description">
+        <p><strong>Graph Coloring</strong> is the assignment of labels (colors) to vertices of a graph such that no two adjacent vertices share the same color. The minimum number of colors needed is called the chromatic number.</p>
+        <br>
+        <p><strong>Welsh-Powell Algorithm:</strong></p>
+        <ol style="margin-left: 20px; line-height: 1.8;">
+            <li>Sort vertices in descending order by degree</li>
+            <li>Assign the first available color to each vertex</li>
+            <li>Ensure no adjacent vertices share the same color</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+
+{% block title %}MST Results - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>MST Algorithm</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Results</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Minimum Spanning Tree Results</h1>
+    <p class="page-subtitle">MST calculated using Prim's algorithm.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">MST Visualization</h3>
+    </div>
+
+    <div class="result-box">
+        <div class="result-label">Total Minimum Weight:</div>
+        <div class="result-value">{{ total_weight }}</div>
+    </div>
+
+    <div class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span>MST edges are highlighted in green. All vertices are connected with minimum total weight.</span>
+    </div>
+
+    <div class="graph-container">
+        <img src="data:image/png;base64,{{ graph_url }}" alt="MST Visualization" class="graph-image">
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">MST Edges</h3>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Weight</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for edge in mst_edges %}
+                <tr>
+                    <td>{{ chr(65 + edge[0]) }}</td>
+                    <td>{{ chr(65 + edge[1]) }}</td>
+                    <td>{{ edge[2] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="action-buttons">
+        <a href="/mst" class="btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Try Another Graph
+        </a>
+        <a href="/" class="btn btn-secondary">
+            <i class="fas fa-home"></i>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block title %}Minimum Spanning Tree - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>MST Algorithm</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Minimum Spanning Tree (MST)</h1>
+    <p class="page-subtitle">Find the minimum spanning tree using Prim's algorithm and visualize the optimal connection path.</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Configure Your Graph</h3>
+        <div class="card-icon">
+            <i class="fas fa-network-wired"></i>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <span>Enter the number of vertices to create a weighted adjacency matrix.</span>
+    </div>
+
+    <form action="/mst/matrix" method="POST">
+        <div class="form-group">
+            <label class="form-label" for="num_vertices">Number of Vertices</label>
+            <input type="number" id="num_vertices" name="num_vertices" class="form-input"
+                   min="2" max="10" required placeholder="Enter a number between 2 and 10">
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-arrow-right"></i>
+                Create Matrix
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h3 class="card-title">About Minimum Spanning Tree</h3>
+    <div class="card-description">
+        <p>A <strong>Minimum Spanning Tree (MST)</strong> is a subset of edges in a weighted, connected graph that connects all vertices with the minimum total edge weight, without forming cycles.</p>
+        <br>
+        <p><strong>Prim's Algorithm:</strong></p>
+        <ol style="margin-left: 20px; line-height: 1.8;">
+            <li>Start with an arbitrary vertex</li>
+            <li>Repeatedly add the minimum weight edge that connects a vertex in the tree to one outside</li>
+            <li>Continue until all vertices are included</li>
+        </ol>
+        <br>
+        <p>MST is widely used in network design, circuit design, and clustering algorithms.</p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block title %}Enter Weighted Matrix - AlgoViz Pro{% endblock %}
+
+{% block breadcrumbs %}
+<span>Home</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>MST Algorithm</span>
+<i class="fas fa-chevron-right breadcrumb-separator"></i>
+<span>Weighted Matrix</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Enter Weighted Adjacency Matrix</h1>
+    <p class="page-subtitle">Enter edge weights (0 = no connection, positive numbers = edge weight).</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{{ num_vertices }} × {{ num_vertices }} Weighted Matrix</h3>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <span>Enter 0 for no connection, or positive numbers for edge weights. The matrix should be symmetric.</span>
+    </div>
+
+    <form action="/mst/calculate" method="POST">
+        <input type="hidden" name="num_vertices" value="{{ num_vertices }}">
+
+        <div class="matrix-container">
+            <table class="matrix-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for j in range(num_vertices) %}
+                        <th style="text-align: center; padding: 8px;">{{ chr(65 + j) }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(num_vertices) %}
+                    <tr>
+                        <th style="padding: 8px;">{{ chr(65 + i) }}</th>
+                        {% for j in range(num_vertices) %}
+                        <td>
+                            <input type="number" name="cell_{{ i }}_{{ j }}" class="matrix-input"
+                                   min="0" max="999" value="0" required>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-calculator"></i>
+                Calculate MST
+            </button>
+            <a href="/mst" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
