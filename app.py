@@ -64,43 +64,217 @@ def welsh_powell_vertex_coloring(G):
         coloring[node] = color
     return coloring
 
+def count_min_colorings(G, k, limit=100000):
+    """
+    Counts distinct valid vertex colorings using exactly k colors.
+    Safe backtracking with pruning.
+    """
+    nodes = list(G.nodes())
+    n = len(nodes)
+    colors = list(range(k))
+    assignment = {}
+    count = 0
+
+    def is_valid(node, color):
+        return all(
+            assignment.get(neigh) != color
+            for neigh in G.neighbors(node)
+        )
+
+    def backtrack(i):
+        nonlocal count
+        if count >= limit:
+            return
+        if i == n:
+            if len(set(assignment.values())) == k:
+                count += 1
+            return
+
+        node = nodes[i]
+        for c in colors:
+            if is_valid(node, c):
+                assignment[node] = c
+                backtrack(i + 1)
+                del assignment[node]
+
+    backtrack(0)
+    return count, count >= limit
+
+
+def greedy_edge_coloring(G):
+    """
+    Chromatic Index via Line Graph + Greedy Vertex Coloring
+    Works on ALL NetworkX versions
+    """
+    # Line graph: edges → nodes
+    L = nx.line_graph(G)
+
+    # Color the line graph (vertex coloring)
+    coloring = nx.coloring.greedy_color(
+        L,
+        strategy="largest_first"
+    )
+
+    return coloring
+
+
+
+import random
+
+MAX_COLORINGS = 20   # hard cap for performance
+
+def greedy_coloring_with_order(G, order):
+    coloring = {}
+    for node in order:
+        used = {coloring.get(n) for n in G.neighbors(node)}
+        color = 0
+        while color in used:
+            color += 1
+        coloring[node] = color
+    return coloring
+
+import random
+
+MAX_COLORINGS = 20  # hard performance cap
+
+def greedy_coloring_with_order(G, order):
+    coloring = {}
+    for node in order:
+        used = {coloring.get(n) for n in G.neighbors(node)}
+        c = 0
+        while c in used:
+            c += 1
+        coloring[node] = c
+    return coloring
+
+
 @app.route('/graph-coloring/chromatic', methods=['POST'])
 def graph_coloring_chromatic():
     try:
         num_vertices = int(request.form['num_vertices'])
-        matrix = [[int(request.form[f'cell_{i}_{j}']) for j in range(num_vertices)] for i in range(num_vertices)]
+        matrix = [
+            [int(request.form[f'cell_{i}_{j}']) for j in range(num_vertices)]
+            for i in range(num_vertices)
+        ]
 
+        # ---------- Build Graph ----------
         G = nx.Graph()
         G.add_nodes_from(range(num_vertices))
-        G.add_edges_from((i, j) for i in range(num_vertices) for j in range(num_vertices) if matrix[i][j] == 1)
-
-        vertex_coloring = welsh_powell_vertex_coloring(G)
-        chromatic_index = max(vertex_coloring.values()) + 1
-
-        colors = ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta', 'orange', 'purple', 'pink', 'brown']
+        for i in range(num_vertices):
+            for j in range(i + 1, num_vertices):
+                if matrix[i][j] == 1:
+                    G.add_edge(i, j)
 
         pos = nx.circular_layout(G)
+        labels = {i: chr(65 + i) for i in range(num_vertices)}
 
-        def draw_graph(G, vertex_coloring, color_mapping, num_vertices, pos):
-            labels = {i: chr(65 + i) for i in range(num_vertices)}
+        # =====================================================
+        # 1️⃣ CHROMATIC NUMBER (VERTEX COLORING) — UNCHANGED
+        # =====================================================
+        base_coloring = welsh_powell_vertex_coloring(G)
+        chromatic_number = max(base_coloring.values()) + 1
+
+        vertex_palette = [
+            'red', 'green', 'blue', 'yellow',
+            'cyan', 'magenta', 'orange',
+            'purple', 'pink', 'brown'
+        ]
+
+        def draw_vertex_graph(coloring):
             plt.figure(figsize=(6, 6))
-            node_colors = [color_mapping[vertex_coloring[node]] for node in G.nodes()]
-            nx.draw(G, pos, labels=labels, with_labels=True, node_color=node_colors, node_size=700, edge_color='gray', font_color='black')
+            node_colors = [vertex_palette[coloring[n]] for n in G.nodes()]
+            nx.draw(
+                G, pos,
+                labels=labels,
+                with_labels=True,
+                node_color=node_colors,
+                node_size=700,
+                edge_color='gray',
+                font_color='black'
+            )
             buf = io.BytesIO()
-            plt.savefig(buf, format='png')
-            buf.seek(0)
+            plt.savefig(buf, format='png', bbox_inches='tight')
             plt.close()
-            return base64.b64encode(buf.getvalue()).decode('utf8')
-
-        color_combinations = list(itertools.permutations(colors[:chromatic_index]))
+            buf.seek(0)
+            return base64.b64encode(buf.getvalue()).decode('utf-8')
 
         graphs = []
-        for color_mapping in color_combinations:
-            color_mapping_dict = {i: color for i, color in enumerate(color_mapping)}
-            graph_url = draw_graph(G, vertex_coloring, color_mapping_dict, num_vertices, pos)
-            graphs.append(graph_url)
+        seen = set()
+        nodes = list(G.nodes())
 
-        return render_template('graph_coloring/chromatic_index.html', chromatic_index=chromatic_index, graphs=graphs)
+        for _ in range(100):
+            random.shuffle(nodes)
+            coloring = greedy_coloring_with_order(G, nodes)
+
+            if max(coloring.values()) + 1 != chromatic_number:
+                continue
+
+            signature = tuple(coloring[n] for n in sorted(coloring))
+            if signature in seen:
+                continue
+
+            seen.add(signature)
+            graphs.append(draw_vertex_graph(coloring))
+
+            if len(graphs) >= MAX_COLORINGS:
+                break
+
+        # =====================================================
+        # 2️⃣ CHROMATIC INDEX (EDGE COLORING) — NEW & WORKING
+        # =====================================================
+        edge_coloring = greedy_edge_coloring(G)
+        chromatic_index = max(edge_coloring.values()) + 1 if edge_coloring else 0
+        
+        
+
+        edge_palette = [
+            "red", "green", "blue", "orange",
+            "purple", "cyan", "magenta",
+            "brown", "pink", "olive"
+        ]
+
+        edge_colors = [
+            edge_palette[edge_coloring[e] % len(edge_palette)]
+            for e in G.edges()
+        ]
+
+        plt.figure(figsize=(7, 7))
+        nx.draw_networkx_nodes(
+            G, pos,
+            node_color="skyblue",
+            node_size=700
+        )
+        nx.draw_networkx_labels(G, pos, labels)
+        nx.draw_networkx_edges(
+            G, pos,
+            edge_color=edge_colors,
+            width=3
+        )
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png", bbox_inches="tight")
+        plt.close()
+        buf.seek(0)
+
+        edge_graph_url = base64.b64encode(buf.getvalue()).decode("utf-8")
+ 
+        
+
+        # =====================================================
+        # 3️⃣ SINGLE TEMPLATE — BOTH RESULTS
+        # =====================================================
+        return render_template(
+            "graph_coloring/chromatic_index.html",
+            chromatic_index=chromatic_number,
+            graphs=graphs,
+            truncated=len(graphs) >= MAX_COLORINGS,
+            edge_chromatic_index=chromatic_index,
+            edge_graph_url=edge_graph_url
+        )
+
+    except Exception as e:
+        print(e)
+        return str(e)
 
     except Exception as e:
         print(f"Error: {e}")
