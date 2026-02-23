@@ -133,20 +133,6 @@ def greedy_coloring_with_order(G, order):
         coloring[node] = color
     return coloring
 
-import random
-
-MAX_COLORINGS = 20  # hard performance cap
-
-def greedy_coloring_with_order(G, order):
-    coloring = {}
-    for node in order:
-        used = {coloring.get(n) for n in G.neighbors(node)}
-        c = 0
-        while c in used:
-            c += 1
-        coloring[node] = c
-    return coloring
-
 
 @app.route('/graph-coloring/chromatic', methods=['POST'])
 def graph_coloring_chromatic():
@@ -173,7 +159,23 @@ def graph_coloring_chromatic():
         # =====================================================
         base_coloring = welsh_powell_vertex_coloring(G)
         chromatic_number = max(base_coloring.values()) + 1
+ 
+        # =====================================================
+        # COUNT TOTAL VALID COLORINGS (NEW FEATURE)
+        # =====================================================
 
+        # Optional safety guard (recommended)
+        if num_vertices > 11:
+          total_colorings = 0
+          truncated_flag = True
+        else:
+          total_colorings, truncated_flag = count_min_colorings(
+          G,
+          chromatic_number,
+          limit=100000
+    )
+
+       
         vertex_palette = [
             'red', 'green', 'blue', 'yellow',
             'cyan', 'magenta', 'orange',
@@ -219,6 +221,7 @@ def graph_coloring_chromatic():
             if len(graphs) >= MAX_COLORINGS:
                 break
 
+        
         # =====================================================
         # 2️⃣ CHROMATIC INDEX (EDGE COLORING) — NEW & WORKING
         # =====================================================
@@ -264,13 +267,16 @@ def graph_coloring_chromatic():
         # 3️⃣ SINGLE TEMPLATE — BOTH RESULTS
         # =====================================================
         return render_template(
-            "graph_coloring/chromatic_index.html",
-            chromatic_index=chromatic_number,
-            graphs=graphs,
-            truncated=len(graphs) >= MAX_COLORINGS,
-            edge_chromatic_index=chromatic_index,
-            edge_graph_url=edge_graph_url
-        )
+    "graph_coloring/chromatic_index.html",
+    chromatic_index=chromatic_number,
+    total_valid_colorings=total_colorings,
+    coloring_count_truncated=truncated_flag,
+    graphs=graphs,
+    truncated=len(graphs) >= MAX_COLORINGS,
+    edge_chromatic_index=chromatic_index,
+    edge_graph_url=edge_graph_url
+)
+
 
     except Exception as e:
         print(e)
@@ -340,60 +346,171 @@ def mst_matrix():
     num_vertices = int(request.form['num_vertices'])
     return render_template('mst/matrix.html', num_vertices=num_vertices)
 
+def validate_weight_matrix(matrix):
+    n = len(matrix)
+
+    # Check square matrix
+    for row in matrix:
+        if len(row) != n:
+            raise ValueError("Matrix must be square.")
+
+    # Check symmetry (undirected graph)
+    for i in range(n):
+        for j in range(n):
+            if matrix[i][j] != matrix[j][i]:
+                raise ValueError("Matrix must be symmetric.")
+
+    # Check non-negative weights
+    for i in range(n):
+        for j in range(n):
+            if matrix[i][j] < 0:
+                raise ValueError("Negative weights are not allowed.")
+
+
 def prims_mst(num_vertices, matrix):
-    visited = [False] * num_vertices
+    visited = set()
     mst_edges = []
-    min_heap = [(0, 0, -1)]
     total_weight = 0
 
-    while min_heap:
+    # Convert matrix to adjacency list (efficient traversal)
+    adjacency = {i: [] for i in range(num_vertices)}
+    for i in range(num_vertices):
+        for j in range(num_vertices):
+            weight = matrix[i][j]
+            if weight > 0:
+                adjacency[i].append((j, weight))
+
+    # Min heap: (weight, current_node, parent_node)
+    min_heap = [(0, 0, -1)]
+
+    while min_heap and len(visited) < num_vertices:
         weight, current, parent = heapq.heappop(min_heap)
 
-        if visited[current]:
+        if current in visited:
             continue
 
-        visited[current] = True
+        visited.add(current)
 
         if parent != -1:
             mst_edges.append((parent, current, weight))
             total_weight += weight
 
-        for neighbor in range(num_vertices):
-            if not visited[neighbor] and matrix[current][neighbor] > 0:
-                heapq.heappush(min_heap, (matrix[current][neighbor], neighbor, current))
+        for neighbor, edge_weight in adjacency[current]:
+            if neighbor not in visited:
+                heapq.heappush(min_heap, (edge_weight, neighbor, current))
+
+    # Connectivity check
+    if len(visited) != num_vertices:
+        raise ValueError("Graph is disconnected. MST cannot be formed.")
 
     return mst_edges, total_weight
+
 
 @app.route('/mst/calculate', methods=['POST'])
 def mst_calculate():
     try:
-        num_vertices = int(request.form['num_vertices'])
-        matrix = [[int(request.form[f'cell_{i}_{j}']) for j in range(num_vertices)] for i in range(num_vertices)]
+        # -----------------------------
+        # 1️⃣ Get vertex count
+        # -----------------------------
+        num_vertices = int(request.form.get('num_vertices', 0))
 
-        mst_edges, total_weight = prims_mst(num_vertices, matrix)
+        if num_vertices <= 0:
+            return "Invalid number of vertices."
 
+        # -----------------------------
+        # 2️⃣ Extract full matrix safely
+        # -----------------------------
+        matrix = []
+
+        for i in range(num_vertices):
+            row = []
+            for j in range(num_vertices):
+                key = f'cell_{i}_{j}'
+                value = request.form.get(key)
+
+                if value is None:
+                    return f"Missing value for {key}"
+
+                try:
+                    weight = int(value)
+                except ValueError:
+                    return "Matrix contains invalid numeric values."
+
+                row.append(weight)
+            matrix.append(row)
+
+        # -----------------------------
+        # 3️⃣ Proper Validation (UPDATED)
+        # -----------------------------
+        try:
+            validate_weight_matrix(matrix)
+        except ValueError as e:
+            return str(e)
+
+        # -----------------------------
+        # 4️⃣ Build Graph (ignore 0 weights)
+        # -----------------------------
         G = nx.Graph()
         G.add_nodes_from(range(num_vertices))
+
         for i in range(num_vertices):
-            for j in range(num_vertices):
+            for j in range(i + 1, num_vertices):
                 if matrix[i][j] > 0:
                     G.add_edge(i, j, weight=matrix[i][j])
 
+        # -----------------------------
+        # 5️⃣ Check connectivity
+        # -----------------------------
+        if not nx.is_connected(G):
+            return "Graph must be connected to compute MST."
+
+        # -----------------------------
+        # 6️⃣ Run Prim's
+        # -----------------------------
+        mst_edges, total_weight = prims_mst(num_vertices, matrix)
+
+        # -----------------------------
+        # 7️⃣ Visualization
+        # -----------------------------
+        pos = nx.circular_layout(G)
         labels = {i: chr(65 + i) for i in range(num_vertices)}
-        edge_labels = {(i, j): matrix[i][j] for i in range(num_vertices) for j in range(num_vertices) if matrix[i][j] > 0}
 
         plt.figure(figsize=(8, 8))
-        pos = nx.circular_layout(G)
 
-        mst_edge_list = [(edge[0], edge[1]) for edge in mst_edges]
+        mst_edge_list = [(u, v) for u, v, _ in mst_edges]
+
         all_edges = list(G.edges())
-        non_mst_edges = [edge for edge in all_edges if edge not in mst_edge_list and (edge[1], edge[0]) not in mst_edge_list]
+        non_mst_edges = [
+            edge for edge in all_edges
+            if edge not in mst_edge_list and (edge[1], edge[0]) not in mst_edge_list
+        ]
 
         nx.draw_networkx_nodes(G, pos, node_color='skyblue', node_size=700)
-        nx.draw_networkx_labels(G, pos, labels, font_size=12, font_color='black')
-        nx.draw_networkx_edges(G, pos, edgelist=non_mst_edges, edge_color='gray', width=2, style='dashed')
-        nx.draw_networkx_edges(G, pos, edgelist=mst_edge_list, edge_color='green', width=4)
-        nx.draw_networkx_edge_labels(G, pos, edge_labels, font_size=10)
+        nx.draw_networkx_labels(G, pos, labels)
+
+        nx.draw_networkx_edges(
+            G, pos,
+            edgelist=non_mst_edges,
+            edge_color='gray',
+            width=2,
+            style='dashed'
+        )
+
+        nx.draw_networkx_edges(
+            G, pos,
+            edgelist=mst_edge_list,
+            edge_color='green',
+            width=4
+        )
+
+        edge_labels = {
+            (u, v): matrix[u][v]
+            for u in range(num_vertices)
+            for v in range(num_vertices)
+            if matrix[u][v] > 0
+        }
+
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
 
         buf = io.BytesIO()
         plt.savefig(buf, format='png', bbox_inches='tight')
@@ -401,11 +518,20 @@ def mst_calculate():
         graph_url = base64.b64encode(buf.getvalue()).decode('utf8')
         plt.close()
 
-        return render_template('mst/result.html', graph_url=graph_url, mst_edges=mst_edges, total_weight=total_weight)
+        # -----------------------------
+        # 8️⃣ Render Result Page
+        # -----------------------------
+        return render_template(
+            'mst/result.html',
+            graph_url=graph_url,
+            mst_edges=mst_edges,
+            total_weight=total_weight
+        )
 
     except Exception as e:
-        print(f"Error: {e}")
-        return str(e)
+        print(f"MST Error: {e}")
+        return "An unexpected error occurred while computing MST."
+
 
 @app.route('/huffman')
 def huffman_index():
